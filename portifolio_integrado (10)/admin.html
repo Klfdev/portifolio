@@ -1,0 +1,212 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Portfólio</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="star-bg"></canvas>
+  <header class="top-nav">
+    <div class="logo">
+      <img src="assets/logo-klfdev.png" alt="Logo KLFDEV" height="48" />
+    </div>
+    <nav class="menu">
+      <a href="index.html">Voltar</a>
+      <a href="#logout" id="logoutBtn" style="display:none">Sair</a>
+    </nav>
+  </header>
+
+  <main style="padding: 40px; max-width: 700px; margin: auto;">
+    <h2 style="color: #00eaff; margin-bottom: 20px">Painel de Admin</h2>
+
+    <div id="login-section">
+      <input type="email" id="email" placeholder="Seu email" class="input-login"/><br><br>
+      <input type="password" id="password" placeholder="Senha" class="input-login"/><br><br>
+      <button id="loginBtn" class="btn">Entrar</button>
+    </div>
+
+    <div id="admin-section" style="display:none">
+      <h3 style="margin-top: 30px;">Cadastrar Novo Projeto</h3>
+      <form id="projectForm">
+        <input type="text" id="titulo" placeholder="Título do projeto" class="input-login"><br>
+        <textarea id="descricao" placeholder="Descrição" class="input-login"></textarea><br>
+        <input type="url" id="link" placeholder="Link para o GitHub ou site" class="input-login"><br>
+
+        <label style="display:block; margin-bottom: 10px;">Imagem do projeto (📎):</label>
+        <input type="file" id="imagemFile" class="input-login" accept="image/*" /><br>
+        <progress id="uploadProgress" value="0" max="100" style="display:none; width: 100%;"></progress><br><br>
+
+        <button type="submit" class="btn">Salvar Projeto</button>
+      </form>
+    
+    <div id="listaProjetos" style="margin-top: 60px;">
+      <h3 style="color:#00eaff;">Projetos Cadastrados</h3>
+      <ul id="projetosLista" style="list-style:none;padding-left:0;"></ul>
+    </div>
+  </div>
+  </main>
+
+
+  <footer>
+    <p>&copy; 2025 Vinicius Lopes. Todos os direitos reservados.</p>
+  </footer>
+
+  <!-- Firebase compat SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuDgrtXfwP0WL5yb86YCVYqQ-fFnT8144",
+      authDomain: "viniport-9ea97.firebaseapp.com",
+      projectId: "viniport-9ea97",
+      storageBucket: "viniport-9ea97.firebasestorage.app",
+      messagingSenderId: "741591013825",
+      appId: "1:741591013825:web:1b93124a22ddd2104f3740",
+      measurementId: "G-4Y3V711FWB"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+auth = firebase.auth();
+auth.signOut(); // força logout ao abrir a página (modo teste)
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    const emailPermitido = "admin@teste.com";
+    const loginSection = document.getElementById("login-section");
+    const adminSection = document.getElementById("admin-section");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const projectForm = document.getElementById("projectForm");
+    const uploadInput = document.getElementById("imagemFile");
+    const uploadProgress = document.getElementById("uploadProgress");
+
+    let imagemURL = "";
+
+    loginBtn.addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+      } catch (error) {
+        alert("Erro ao fazer login: " + error.message);
+      }
+    });
+
+    logoutBtn.addEventListener("click", async () => {
+      await auth.signOut();
+    });
+
+    auth.onAuthStateChanged((user) => {
+    if (!user || user.email !== emailPermitido) {
+      window.location.href = "login.html";
+      return;
+    }
+      if (user && user.email === emailPermitido) {
+        loginSection.style.display = "none";
+        adminSection.style.display = "block";
+        logoutBtn.style.display = "inline-block";
+      } else {
+        loginSection.style.display = "block";
+        adminSection.style.display = "none";
+        logoutBtn.style.display = "none";
+        if (user) auth.signOut();
+      }
+    });
+
+    uploadInput.addEventListener("change", async () => {
+      const file = uploadInput.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("image", file);
+
+      uploadProgress.style.display = "block";
+      uploadProgress.value = 0;
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "https://api.imgur.com/3/image");
+      xhr.setRequestHeader("Authorization", "Client-ID efcc15462d6f30d");
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const percent = (event.loaded / event.total) * 100;
+          uploadProgress.value = percent;
+        }
+      };
+
+      xhr.onload = () => {
+        const response = JSON.parse(xhr.responseText);
+        if (response.success) {
+          imagemURL = response.data.link;
+          alert("Imagem enviada com sucesso!");
+        } else {
+          alert("Erro ao enviar imagem para o Imgur.");
+        }
+        uploadProgress.style.display = "none";
+      };
+
+      xhr.onerror = () => {
+        alert("Falha no upload da imagem.");
+        uploadProgress.style.display = "none";
+      };
+
+      xhr.send(formData);
+    });
+
+    projectForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const titulo = document.getElementById("titulo").value;
+      const descricao = document.getElementById("descricao").value;
+      const link = document.getElementById("link").value;
+
+      try {
+        await db.collection("projetos").add({
+          titulo,
+          descricao,
+          link,
+          imagem: imagemURL
+        });
+        alert("Projeto salvo com sucesso!");
+        projectForm.reset();
+        imagemURL = "";
+      } catch (error) {
+        alert("Erro ao salvar projeto: " + error.message);
+      }
+    });
+  
+    db.collection("projetos").onSnapshot((snapshot) => {
+      const lista = document.getElementById("projetosLista");
+      if (!lista) return;
+      lista.innerHTML = "";
+      snapshot.forEach((doc) => {
+        const li = document.createElement("li");
+        const data = doc.data();
+        li.innerHTML = `
+          <div style="border:1px solid #333;padding:10px;border-radius:8px;margin-bottom:10px;background:#121622;">
+            <strong>${data.titulo || 'Sem título'}</strong><br>
+            <small>${data.descricao || ''}</small><br>
+            ${data.link ? `<a href="${data.link}" target="_blank" style="color:#4ad;">Ver link</a><br>` : ""}
+            <button onclick="removerProjeto('${doc.id}')" style="margin-top:8px;background:#ff3b3b;color:#fff;border:none;padding:6px 12px;border-radius:5px;cursor:pointer;">Remover</button>
+          </div>
+        `;
+        lista.appendChild(li);
+      });
+    });
+
+    function removerProjeto(id) {
+      if (confirm("Tem certeza que deseja excluir este projeto?")) {
+        db.collection("projetos").doc(id).delete().then(() => {
+          alert("Projeto removido com sucesso.");
+        }).catch((error) => {
+          alert("Erro ao remover projeto: " + error.message);
+        });
+      }
+    }
+  </script>
+</body>
+</html>

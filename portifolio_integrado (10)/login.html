@@ -1,0 +1,61 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login - Painel Admin</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="star-bg"></canvas>
+  <header class="top-nav">
+    <div class="logo">
+      <img src="assets/logo-klfdev.png" alt="Logo KLFDEV" height="48" />
+    </div>
+    <nav class="menu">
+      <a href="index.html">Voltar</a>
+    </nav>
+  </header>
+
+  <main style="padding: 40px; max-width: 600px; margin: auto;">
+    <h2 style="color: #00eaff; margin-bottom: 20px">Login do Administrador</h2>
+    <div>
+      <input type="email" id="email" placeholder="Seu email" class="input-login"/><br><br>
+      <input type="password" id="password" placeholder="Senha" class="input-login"/><br><br>
+      <button id="loginBtn" class="btn">Entrar</button>
+    </div>
+  </main>
+
+  <footer>
+    <p>&copy; 2025 Vinicius Lopes. Todos os direitos reservados.</p>
+  </footer>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuDgrtXfwP0WL5yb86YCVYqQ-fFnT8144",
+      authDomain: "viniport-9ea97.firebaseapp.com",
+      projectId: "viniport-9ea97",
+      storageBucket: "viniport-9ea97.firebasestorage.app",
+      messagingSenderId: "741591013825",
+      appId: "1:741591013825:web:1b93124a22ddd2104f3740",
+      measurementId: "G-4Y3V711FWB"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+
+    document.getElementById("loginBtn").addEventListener("click", async () => {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        await auth.signInWithEmailAndPassword(email, password);
+        window.location.href = "admin.html";
+      } catch (err) {
+        alert("Erro ao logar: " + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
